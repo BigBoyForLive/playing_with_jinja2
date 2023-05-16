@@ -1,0 +1,46 @@
+---
+- name: "playing with jinja2"
+  hosts: all
+  become: true
+  vars: 
+    last_item: "{{ groups.all | last }}"
+  tasks: 
+    - name: "building the hosts_list file wich contain ip of all machines except those in the same group"
+      ansible.builtin.lineinfile:
+        path: /home/sshuser/hosts_list
+        line: |
+          {% for host in groups.all %}
+          {% if host != inventory_hostname %}
+          [{{ host }}]
+          {{ hostvars[host].ansible_host }}  {{ hostvars[host].group_names  }}
+          {% endif %}
+          {% endfor %}
+        create: yes
+
+    - name: "Creating file others_hosts"
+      ansible.builtin.lineinfile:
+        path: /home/sshuser/others_hosts
+        line: | 
+          {% if last_item == inventory_hostname %}
+          {% for host in groups.all %}
+          {% if  hostvars[host].ansible_host != ansible_host %}
+          [{{ host }}]
+          {{ hostvars[host].ansible_host }} {{ hostvars[host].group_names[0] }}
+          {% endif %}
+          {% endfor %}
+          {% endif %}
+        create: yes        
+
+    - name: "Creating file server_host"
+      ansible.builtin.lineinfile:
+        path: /home/sshuser/server_host
+        line: | 
+          {% for host in groups.all %}
+          {% if  hostvars[host].ansible_host != ansible_host %}
+          [{{ host }}]
+          {{ hostvars[host].ansible_host }} {{ hostvars[host].group_names[0] }}
+          {% endif %}
+          {% endfor %}
+        create: yes        
+
+    
